@@ -2,6 +2,7 @@
     #define ENGINE_H
 
     #include <cmath>
+    #include <vector>
 
     #define SCREEN_WIDTH        1200
     #define SCREEN_HEIGHT       650
