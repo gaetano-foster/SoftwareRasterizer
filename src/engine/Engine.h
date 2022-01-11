@@ -25,7 +25,7 @@
         void SetProjectionMatrix(float near, float far, float fov);
     };
 
-    typedef Triangle* Mesh;
+    typedef std::vector<Triangle> Mesh;
 
     void MultiplyMatrixVector(Vec3D *o, Vec3D i, Mat4x4 m);
 

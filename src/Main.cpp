@@ -22,6 +22,11 @@ public:
 
 		return true;
 	}
+
+private:
+    Mat4x4 mat_proj;
+    Vec3D camera;
+	SDL_Window *window;
 };
 
 
