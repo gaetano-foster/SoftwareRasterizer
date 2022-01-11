@@ -6,7 +6,7 @@
 
     #define SCREEN_WIDTH        1280
     #define SCREEN_HEIGHT       720
-    #define ASPECT_RATIO        (float)SCREEN_HEIGHT / (float)SCREEN_WIDTH
+    #define ASPECT_RATIO        (float)(SCREEN_HEIGHT / (float)SCREEN_WIDTH)
     #define SWAP(x,y) do { (x)=(x)^(y); (y)=(x)^(y); (x)=(x)^(y); } while(0)
 
     struct Vec3D 
