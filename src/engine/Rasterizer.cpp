@@ -7,8 +7,7 @@ Rasterizer::Rasterizer()
 
 bool Rasterizer::OnUserCreate()
 {
-    vCamera = { 0, 0, 0 };
-    matProj.SetProjectionMatrix(0.1f, 1000.0f, 90.0f);
+    matProj.SetProjectionMatrix(0.1f, 1000.0f, cCamera.fFov);
     eCube.mesh = {
 	    // SOUTH
 	    { 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
@@ -29,15 +28,21 @@ bool Rasterizer::OnUserCreate()
 	    { 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
 	    { 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
     };
-	eCube.z = 3;
+	eCube.z = 6;
 	
 	return true;
 }
 
 bool Rasterizer::OnUserUpdate(float fElapsedTime)
 {
+	eCube.yRot += (GetKey(olc::D).bHeld) * fElapsedTime;
+	eCube.yRot -= (GetKey(olc::A).bHeld) * fElapsedTime;
+	eCube.xRot += (GetKey(olc::W).bHeld) * fElapsedTime;
+	eCube.xRot -= (GetKey(olc::S).bHeld) * fElapsedTime;
+
     Clear(olc::BLACK);
+	cCamera.Update();
 	eCube.Update();
-	eCube.Render(vCamera, matProj, this);
+	eCube.Render(cCamera, matProj, this);
 	return true;
 }

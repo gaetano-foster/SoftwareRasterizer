@@ -11,15 +11,15 @@ void Mat4x4::Init()
     }
 }
 
-void Mat4x4::SetProjectionMatrix(float near, float far, float fov)
+void Mat4x4::SetProjectionMatrix(float fNear, float fFar, float fFov)
 {
-    float fov_rad = 1.0f / tanf(fov * 0.5f / 180.0f * 3.14159f);
+    float fFovRad = 1.0f / tanf(fFov * 0.5f / 180.0f * 3.14159f);
 
     this->Init();
-    this->m[0][0] = ASPECT_RATIO * fov_rad;
-    this->m[1][1] = fov_rad;
-    this->m[2][2] = far / (far - near);
-    this->m[3][2] = (-far * near) / (far - near);
+    this->m[0][0] = ASPECT_RATIO * fFovRad;
+    this->m[1][1] = fFovRad;
+    this->m[2][2] = fFar / (fFar - fNear);
+    this->m[3][2] = (-fFar * fNear) / (fFar - fNear);
     this->m[2][3] = 1.0f;
     this->m[3][3] = 0.0f;
 }
@@ -54,7 +54,7 @@ void Entity::Update()
     m_matRotation.m[2][2] = cosf(yRot) * cosf(xRot);
 }
 
-void Entity::Render(Vec3D vCamera, Mat4x4 matProj, olc::PixelGameEngine *engine)
+void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine)
 {
     for (auto tri : mesh)
     {
@@ -66,9 +66,9 @@ void Entity::Render(Vec3D vCamera, Mat4x4 matProj, olc::PixelGameEngine *engine)
         triTrans = triRot;
         for (int n = 0; n < 3; n++)// translate the triangle
         {
-            triTrans.p[n].x = triRot.p[n].x + x;
-            triTrans.p[n].y = triRot.p[n].y + y;
-            triTrans.p[n].z = triRot.p[n].z + z;
+            triTrans.p[n].x = triRot.p[n].x + x - cCamera.x;
+            triTrans.p[n].y = triRot.p[n].y + y - cCamera.y;
+            triTrans.p[n].z = triRot.p[n].z + z - cCamera.z; // we will probably not be rotating the camera along the z axis
         }
 
         // Use Cross-Product to Get Surface Normal 
@@ -91,27 +91,28 @@ void Entity::Render(Vec3D vCamera, Mat4x4 matProj, olc::PixelGameEngine *engine)
         vNormal.y /= l; 
         vNormal.z /= l;
         
-        if  (vNormal.x * (triTrans.p[0].x - vCamera.x) +
-             vNormal.y * (triTrans.p[0].y - vCamera.y) +                                        
-             vNormal.z * (triTrans.p[0].z - vCamera.z) < 0) 
+        if  (vNormal.x * (triTrans.p[0].x - cCamera.x) +
+             vNormal.y * (triTrans.p[0].y - cCamera.y) +                                        
+             vNormal.z * (triTrans.p[0].z - cCamera.z) < 0) 
         {
             triProj = triTrans;
             for (int n = 0; n < 3; n++) // apply perspective/projection to triangle
                 MultiplyMatrixVector(&triProj.p[n], triTrans.p[n], matProj);
 
-            // Scale mesh into view 
-            triProj.p[0].x += 1.0f; 
-            triProj.p[0].y += 1.0f;
-		    triProj.p[1].x += 1.0f;
-            triProj.p[1].y += 1.0f;
-		    triProj.p[2].x += 1.0f; 
-            triProj.p[2].y += 1.0f;
+            // Scale mesh into view             
 	        triProj.p[0].x *= 0.5f * (float)SCREEN_WIDTH;
 		    triProj.p[0].y *= 0.5f * (float)SCREEN_HEIGHT;
 	        triProj.p[1].x *= 0.5f * (float)SCREEN_WIDTH;
 	        triProj.p[1].y *= 0.5f * (float)SCREEN_HEIGHT;
 	        triProj.p[2].x *= 0.5f * (float)SCREEN_WIDTH;
 	        triProj.p[2].y *= 0.5f * (float)SCREEN_HEIGHT;
+
+            triProj.p[0].x += SCREEN_WIDTH / 2; 
+            triProj.p[0].y += SCREEN_HEIGHT / 2;
+		    triProj.p[1].x += SCREEN_WIDTH / 2;
+            triProj.p[1].y += SCREEN_HEIGHT / 2;
+		    triProj.p[2].x += SCREEN_WIDTH / 2; 
+            triProj.p[2].y += SCREEN_HEIGHT / 2;
 
             // Illumination 
             Vec3D vLightDir = (Vec3D) { 0.0f, 0.0f, -1.0f }; // spaghetti
@@ -129,4 +130,9 @@ void Entity::Render(Vec3D vCamera, Mat4x4 matProj, olc::PixelGameEngine *engine)
                                  olc::Pixel(dp * 255, dp * 255, dp * 255, 255));
         }
     }
+}
+
+void Camera::Update()
+{
+
 }
