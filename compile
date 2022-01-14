@@ -1,3 +1,3 @@
 #! /usr/bin/bash
 
-g++ -o a.out src/Main.cpp src/engine/Engine.cpp src/engine/Rasterizer.cpp -g -fexpensive-optimizations -flto -O -Wunreachable-code -Wno-deprecated -Wno-unknown-pragmas -DUNICODE -L. -lm -lX11 -lGL -lpthread -lpng -lstdc++fs -std=c++17
+g++ -o a.out src/Main.cpp src/engine/Engine.cpp src/engine/main/Rasterizer.cpp -g -fexpensive-optimizations -flto -O -Wunreachable-code -Wno-deprecated -Wno-unknown-pragmas -DUNICODE -L. -lm -lX11 -lGL -lpthread -lpng -lstdc++fs -std=c++17
