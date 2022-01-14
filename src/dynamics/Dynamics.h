@@ -1,6 +1,8 @@
 #ifndef DYNAMICS_H
 #define DYNAMICS_H
 
+#include "../math/Maths.h"
+
 class Dynamic
 {
 public:
@@ -18,6 +20,19 @@ public:
 
 public:
     void Update() override;
+};
+
+class Entity : public Dynamic
+{
+public:
+    Mesh mMesh;
+
+public:
+    void Update() override;
+    void Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine);
+
+private:
+    Mat4x4 m_matRotation;
 };
 
 #endif

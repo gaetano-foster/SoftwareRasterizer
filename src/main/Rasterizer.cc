@@ -8,7 +8,7 @@ Rasterizer::Rasterizer()
 bool Rasterizer::OnUserCreate()
 {
     matProj.SetProjectionMatrix(0.1f, 1000.0f, cCamera.fFov);
-    eCube.mesh = {
+    eCube.mMesh.vecTris = {
 	    // SOUTH
 	    { 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
 	    { 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },

@@ -1,5 +1,5 @@
 #define OLC_PGE_APPLICATION
-#include "engine/main/Rasterizer.h"
+#include "Rasterizer.h"
 
 int main(int argc, char **argv)
 {
