@@ -1,3 +1,5 @@
+#ifndef DYNAMICS_H
+#define DYNAMICS_H
 
 class Dynamic
 {
@@ -17,3 +19,5 @@ public:
 public:
     void Update() override;
 };
+
+#endif
