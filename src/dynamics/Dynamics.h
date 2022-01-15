@@ -1,7 +1,7 @@
 #ifndef DYNAMICS_H
 #define DYNAMICS_H
 
-#include "../math/Maths.h"
+#include "../math/mesh/Mesh.h"
 
 class Dynamic
 {
