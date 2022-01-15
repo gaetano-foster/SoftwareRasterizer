@@ -80,16 +80,17 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
             triProj.p[2].y += SCREEN_HEIGHT / 2;
 
             // Illumination 
-            Vec3D vLightDir = (Vec3D) { 0.0f, 0.0f, -1.0f }; // spaghetti
+            Vec3D vLightDir = (Vec3D) { 0.5f, 0.0f, -1.0f }; 
             float ld = sqrtf(vLightDir.x * vLightDir.x + vLightDir.y * vLightDir.y + vLightDir.z * vLightDir.z);
 		    vLightDir.x /= ld; 
             vLightDir.y /= ld; 
             vLightDir.z /= ld;
 
 		    // How similar is normal to light direction?
-		    float fLightingVal = vNormal.x * vLightDir.x + vNormal.y * vLightDir.y + vNormal.z * vLightDir.z;
+		    float fLightingVal = (vNormal.x * vLightDir.x + vNormal.y * vLightDir.y + vNormal.z * vLightDir.z) * 255; // we multiply by 255 for illumination
+            fLightingVal = (fLightingVal > 255) ? fLightingVal = 255 : fLightingVal = (fLightingVal < 20) ? fLightingVal = 20 : fLightingVal = fLightingVal;
 
-            vecTrianglesToRaster.push_back({ triProj, olc::Pixel(fLightingVal * 255, fLightingVal * 255, fLightingVal * 255, 255) });
+            vecTrianglesToRaster.push_back({ triProj, olc::Pixel(fLightingVal, fLightingVal, fLightingVal, 255) });
         }
     }
 
