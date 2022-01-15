@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "Dynamics.h"
 
 void Entity::Update()
@@ -17,6 +18,9 @@ void Entity::Update()
 
 void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine)
 {
+    std::vector<RasterableTriangle> vecTrianglesToRaster;
+
+    // get triangles to be rastered
     for (auto tri : mMesh.vecTris)
     {
         Triangle triProj, triTrans, triRot;
@@ -83,13 +87,28 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
             vLightDir.z /= ld;
 
 		    // How similar is normal to light direction?
-		    float dp = vNormal.x * vLightDir.x + vNormal.y * vLightDir.y + vNormal.z * vLightDir.z;
+		    float fLightingVal = vNormal.x * vLightDir.x + vNormal.y * vLightDir.y + vNormal.z * vLightDir.z;
 
-            engine->FillTriangle(triProj.p[0].x, triProj.p[0].y,
-                                 triProj.p[1].x, triProj.p[1].y, 
-                                 triProj.p[2].x, triProj.p[2].y,
-                                 olc::Pixel(dp * 255, dp * 255, dp * 255, 255));
+            vecTrianglesToRaster.push_back({ triProj, olc::Pixel(fLightingVal * 255, fLightingVal * 255, fLightingVal * 255, 255) });
         }
+    }
+
+    // sort triangles back to front
+    sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](RasterableTriangle &t1, RasterableTriangle &t2) 
+    {
+        float z1 = (t1.tri.p[0].z + t1.tri.p[1].z + t1.tri.p[2].z) / 3.0f;
+        float z2 = (t2.tri.p[0].z + t2.tri.p[1].z + t2.tri.p[2].z) / 3.0f;
+        return z1 > z2;
+    });
+
+    // raster triangles
+    for (auto &triangle : vecTrianglesToRaster)
+    {
+        Triangle triToDraw = triangle.tri;
+        engine->FillTriangle(triToDraw.p[0].x, triToDraw.p[0].y,
+                             triToDraw.p[1].x, triToDraw.p[1].y, 
+                             triToDraw.p[2].x, triToDraw.p[2].y,
+                             triangle.pColor);
     }
 }
 

@@ -18,6 +18,12 @@ struct Triangle
     Vec3D p[3];
 };
 
+struct RasterableTriangle
+{
+    Triangle tri;
+    olc::Pixel pColor;
+};
+
 struct Mat4x4 
 {
     float m[4][4] = { 0 };
