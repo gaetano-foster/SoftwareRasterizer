@@ -49,25 +49,13 @@ void Mat4x4::MakeTranslation(float x, float y, float z)
     m[3][2] = z;
 }
 
-Mat4x4 MultiplyMatrices(mat4x4 &m1, mat4x4 &m2)
+Mat4x4 MultiplyMatrices(Mat4x4 &m1, Mat4x4 &m2)
 {
 	Mat4x4 matrix;
 	for (int c = 0; c < 4; c++)
 		for (int r = 0; r < 4; r++)
 			matrix.m[r][c] = m1.m[r][0] * m2.m[0][c] + m1.m[r][1] * m2.m[1][c] + m1.m[r][2] * m2.m[2][c] + m1.m[r][3] * m2.m[3][c];
 	return matrix;
-}
-
-Vec3D::Vec3D()
-{
-    x = y = z = 0;
-}
-
-Vec3D::Vec3D(float a, float b, float c)
-{
-    x = a;
-    y = b;
-    z = c;
 }
 
 float Vec3D::Length() const
@@ -96,8 +84,28 @@ float DotProduct(Vec3D &v1, Vec3D &v2)
 Vec3D CrossProduct(Vec3D &v1, Vec3D &v2)
 {
     Vec3D v;
-    v.x = v1.y * v2.z - v1.z * v2.y;
-    v.y = v1.z * v2.x - v1.x * v2.z;
-    v.z = v1.x * v2.y - v1.y - v2.x;
+	v.x = v1.y * v2.z - v1.z * v2.y;
+	v.y = v1.z * v2.x - v1.x * v2.z;
+	v.z = v1.x * v2.y - v1.y * v2.x;
     return v;
+}
+
+Vec3D Vec3D_Add(Vec3D v1, Vec3D v2)
+{
+    return { v1.x + v2.x, v1.y + v2.y, v1.z + v2.z };
+}
+
+Vec3D Vec3D_Sub(Vec3D v1, Vec3D v2)
+{
+    return { v1.x - v2.x, v1.y - v2.y, v1.z - v2.z };
+}
+
+Vec3D Vec3D_Mult(Vec3D v1, Vec3D v2)
+{
+    return { v1.x * v2.x, v1.y * v2.y, v1.z * v2.z };
+}
+
+Vec3D Vec3D_Div(Vec3D v1, Vec3D v2)
+{
+    return { v1.x / v2.x, v1.y / v2.y, v1.z / v2.z };
 }

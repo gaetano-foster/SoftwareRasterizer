@@ -36,7 +36,7 @@ public:
     void Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine);
 
 private:
-    Mat4x4 m_matRotation;
+    Mat4x4 m_matWorld;
 };
 
 #endif

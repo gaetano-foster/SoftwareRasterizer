@@ -10,10 +10,10 @@
 
 struct Vec3D 
 {
-    float x, y, z, w;
-
-    Vec3D();
-    Vec3D(float a, float b, float c);
+    float x;
+    float y;
+    float z;
+    float w = 1;
 
     float Length() const;
     Vec3D Normal();
@@ -36,6 +36,11 @@ struct Mat4x4
 void MatrixMultiplyVector(Vec3D *o, Vec3D i, Mat4x4 m);
 float DotProduct(Vec3D &v1, Vec3D &v2);
 Vec3D CrossProduct(Vec3D &v1, Vec3D &v2);
-Mat4x4 MultiplyMatrices(mat4x4 &m1, mat4x4 &m2);
+Mat4x4 MultiplyMatrices(Mat4x4 &m1, Mat4x4 &m2);
+
+Vec3D Vec3D_Add(Vec3D v1, Vec3D v2);
+Vec3D Vec3D_Sub(Vec3D v1, Vec3D v2);
+Vec3D Vec3D_Mult(Vec3D v1, Vec3D v2);
+Vec3D Vec3D_Div(Vec3D v1, Vec3D v2);
 
 #endif

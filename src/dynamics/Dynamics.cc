@@ -3,7 +3,12 @@
 
 void Entity::Update()
 {
-    m_matRotation.MakeRotation(xRot, yRot, zRot);
+    Mat4x4 matTrans, matRot;
+    m_matWorld.MakeIdentity();
+    matTrans.MakeTranslation(x, y, z);
+    matRot.MakeRotation(xRot, yRot, zRot);
+
+    m_matWorld = MultiplyMatrices(matRot, matTrans);
 }
 
 void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine)
@@ -13,46 +18,28 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
     // get triangles to be rastered
     for (auto tri : mMesh.vecTris)
     {
-        Triangle triProj, triTrans, triRot;
+        Triangle triProj, triTrans;
 
         for (int n = 0; n < 3; n++)
-		    MatrixMultiplyVector(&triRot.p[n], tri.p[n], m_matRotation);
-
-        triTrans = triRot;
-        for (int n = 0; n < 3; n++)// translate the triangle
-        {
-            triTrans.p[n].x = triRot.p[n].x + x - cCamera.x;
-            triTrans.p[n].y = triRot.p[n].y + y - cCamera.y;
-            triTrans.p[n].z = triRot.p[n].z + z - cCamera.z; 
-        }
+		    MatrixMultiplyVector(&triTrans.p[n], tri.p[n], m_matWorld);
 
         // Use Cross-Product to Get Surface Normal 
 		Vec3D vNormal, line1, line2;
-		line1.x = triTrans.p[1].x - triTrans.p[0].x;
-		line1.y = triTrans.p[1].y - triTrans.p[0].y;
-		line1.z = triTrans.p[1].z - triTrans.p[0].z;
+		line1 = Vec3D_Sub(triTrans.p[1], triTrans.p[0]);
+        line2 = Vec3D_Sub(triTrans.p[2], triTrans.p[0]);
 
-		line2.x = triTrans.p[2].x - triTrans.p[0].x;
-		line2.y = triTrans.p[2].y - triTrans.p[0].y;
-	    line2.z = triTrans.p[2].z - triTrans.p[0].z;
-
-	    vNormal.x = line1.y * line2.z - line1.z * line2.y;
-	    vNormal.y = line1.z * line2.x - line1.x * line2.z;
-	    vNormal.z = line1.x * line2.y - line1.y * line2.x;
-
-        // it's normally normal to normalize a normal
-	    float l = sqrtf(vNormal.x * vNormal.x + vNormal.y * vNormal.y + vNormal.z * vNormal.z);
-	    vNormal.x /= l;
-        vNormal.y /= l; 
-        vNormal.z /= l;
+	    vNormal = CrossProduct(line1, line2);
+	    vNormal = vNormal.Normal(); // it's normally normal to normalize a normal
+        Vec3D vCameraRay = Vec3D_Sub(triTrans.p[0], { cCamera.x, cCamera.y, cCamera.z });
         
-        if  (vNormal.x * (triTrans.p[0].x - cCamera.x) +
-             vNormal.y * (triTrans.p[0].y - cCamera.y) +                                        
-             vNormal.z * (triTrans.p[0].z - cCamera.z) < 0) 
+        if  (DotProduct(vNormal, vCameraRay) < 0) 
         {
             triProj = triTrans;
             for (int n = 0; n < 3; n++) // apply perspective/projection to triangle
                 MatrixMultiplyVector(&triProj.p[n], triTrans.p[n], matProj);
+            
+            for (int n = 0; n < 3; n++)
+                triProj.p[n] = Vec3D_Div(triProj.p[n], { triProj.p[n].w, triProj.p[n].w, triProj.p[n].w });
 
             // Scale mesh into view             
 	        triProj.p[0].x *= 0.5f * (float)SCREEN_WIDTH;
@@ -71,13 +58,10 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
 
             // Illumination 
             Vec3D vLightDir = (Vec3D) { 0.5f, 0.0f, -1.0f }; 
-            float ld = sqrtf(vLightDir.x * vLightDir.x + vLightDir.y * vLightDir.y + vLightDir.z * vLightDir.z);
-		    vLightDir.x /= ld; 
-            vLightDir.y /= ld; 
-            vLightDir.z /= ld;
+            vLightDir = vLightDir.Normal();
 
 		    // How similar is normal to light direction?
-		    float fLightingVal = (vNormal.x * vLightDir.x + vNormal.y * vLightDir.y + vNormal.z * vLightDir.z) * 255; // we multiply by 255 for illumination
+		    float fLightingVal = (DotProduct(vLightDir, vNormal)) * 255; // we multiply by 255 for illumination
             fLightingVal = (fLightingVal > 255) ? fLightingVal = 255 : fLightingVal = (fLightingVal < 20) ? fLightingVal = 20 : fLightingVal = fLightingVal;
 
             vecTrianglesToRaster.push_back({ triProj, olc::Pixel(fLightingVal, fLightingVal, fLightingVal, 255) });
