@@ -1,6 +1,9 @@
 #include <algorithm>
 #include "Dynamics.h"
 
+using namespace vec;
+using namespace mat4;
+
 void Entity::Update()
 {
     Mat4x4 matTrans, matRot;
@@ -29,7 +32,7 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
         line2 = Vec3D_Sub(triTrans.p[2], triTrans.p[0]);
 
 	    vNormal = CrossProduct(line1, line2);
-	    vNormal = vNormal.Normal(); // it's normally normal to normalize a normal
+	    vNormal.Normalize(); // it's normally normal to normalize a normal
         Vec3D vCameraRay = Vec3D_Sub(triTrans.p[0], { cCamera.x, cCamera.y, cCamera.z });
         
         if  (DotProduct(vNormal, vCameraRay) < 0) 
@@ -39,7 +42,7 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
                 MatrixMultiplyVector(&triProj.p[n], triTrans.p[n], matProj);
             
             for (int n = 0; n < 3; n++)
-                triProj.p[n] = Vec3D_Div(triProj.p[n], { triProj.p[n].w, triProj.p[n].w, triProj.p[n].w });
+                triProj.p[n] = Vec3D_Div(triProj.p[n], FloatAsVec(triProj.p[n].w));
 
             // Scale mesh into view             
 	        triProj.p[0].x *= 0.5f * (float)SCREEN_WIDTH;
@@ -58,7 +61,7 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
 
             // Illumination 
             Vec3D vLightDir = (Vec3D) { 0.5f, 0.0f, -1.0f }; 
-            vLightDir = vLightDir.Normal();
+            vLightDir.Normalize();
 
 		    // How similar is normal to light direction?
 		    float fLightingVal = (DotProduct(vLightDir, vNormal)) * 255; // we multiply by 255 for illumination
@@ -79,11 +82,7 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
     // raster triangles
     for (auto &triangle : vecTrianglesToRaster)
     {
-        Triangle triToDraw = triangle.tri;
-        engine->FillTriangle(triToDraw.p[0].x, triToDraw.p[0].y,
-                             triToDraw.p[1].x, triToDraw.p[1].y, 
-                             triToDraw.p[2].x, triToDraw.p[2].y,
-                             triangle.pColor);
+        triangle.Raster(engine);
     }
 }
 
