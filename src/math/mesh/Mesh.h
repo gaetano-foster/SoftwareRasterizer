@@ -14,6 +14,8 @@ struct RasterableTriangle
 {
     Triangle tri;
     olc::Pixel pColor;
+
+    void Raster(olc::PixelGameEngine *engine);
 };
 
 #endif

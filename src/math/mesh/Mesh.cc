@@ -39,3 +39,11 @@ bool Mesh::LoadFromObjectFile(std::string sFileName)
 
 	return true;
 }
+
+void RasterableTriangle::Raster(olc::PixelGameEngine *engine)
+{
+	engine->FillTriangle(tri.p[0].x, tri.p[0].y,
+                         tri.p[1].x, tri.p[1].y, 
+                         tri.p[2].x, tri.p[2].y,
+                         pColor);
+}
