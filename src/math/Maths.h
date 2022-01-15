@@ -40,6 +40,7 @@ namespace mat4
     void MatrixMultiplyVector(Vec3D *o, Vec3D i, Mat4x4 m);
     Mat4x4 MultiplyMatrices(Mat4x4 &m1, Mat4x4 &m2);
     Mat4x4 MatrixPointAt(Vec3D pos, Vec3D target, Vec3D up);
+    Mat4x4 MatrixInverse(Mat4x4 m); // IMPORTANT: Only works on Rotation/Translation matrices. Must be edited in the future!
 }
 
 namespace vec
@@ -50,7 +51,7 @@ namespace vec
     Vec3D Vec3D_Div(Vec3D v1, Vec3D v2);
     float DotProduct(Vec3D &v1, Vec3D &v2);
     Vec3D CrossProduct(Vec3D &v1, Vec3D &v2);
-    Vec3D FloatAsVec(float fVector); // for ease of multiplication
+    Vec3D FloatAsVec(float fVector); // for ease of math
 }
 
 #endif
