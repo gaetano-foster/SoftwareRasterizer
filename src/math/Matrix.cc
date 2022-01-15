@@ -1,5 +1,8 @@
 #include "Maths.h"
 
+using namespace vec;
+using namespace mat4;
+
 void Mat4x4::MakeIdentity()
 {
     for (int r = 0; r < 4; r++) 
@@ -49,7 +52,7 @@ void Mat4x4::MakeTranslation(float x, float y, float z)
     m[3][2] = z;
 }
 
-Mat4x4 MultiplyMatrices(Mat4x4 &m1, Mat4x4 &m2)
+Mat4x4 mat4::MultiplyMatrices(Mat4x4 &m1, Mat4x4 &m2)
 {
 	Mat4x4 matrix;
 	for (int c = 0; c < 4; c++)
@@ -58,17 +61,7 @@ Mat4x4 MultiplyMatrices(Mat4x4 &m1, Mat4x4 &m2)
 	return matrix;
 }
 
-float Vec3D::Length() const
-{
-    return sqrtf(x * x + y * y + z * z);
-}
-
-Vec3D Vec3D::Normal()
-{
-    return { this->x / Length(), this->y / Length(), this->z / Length() };
-}
-
-void MatrixMultiplyVector(Vec3D *o, Vec3D i, Mat4x4 m)
+void mat4::MatrixMultiplyVector(Vec3D *o, Vec3D i, Mat4x4 m)
 {
 	o->x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + i.w * m.m[3][0];
 	o->y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + i.w * m.m[3][1];
@@ -76,36 +69,25 @@ void MatrixMultiplyVector(Vec3D *o, Vec3D i, Mat4x4 m)
 	o->w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + i.w * m.m[3][3];
 }
 
-float DotProduct(Vec3D &v1, Vec3D &v2)
+Mat4x4 mat4::MatrixPointAt(Vec3D pos, Vec3D target, Vec3D up)
 {
-    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
-}
+    // new forward direction
+    Vec3D vNewForward = Vec3D_Sub(target, pos);
+    vNewForward.Normalize(); 
 
-Vec3D CrossProduct(Vec3D &v1, Vec3D &v2)
-{
-    Vec3D v;
-	v.x = v1.y * v2.z - v1.z * v2.y;
-	v.y = v1.z * v2.x - v1.x * v2.z;
-	v.z = v1.x * v2.y - v1.y * v2.x;
-    return v;
-}
+    // new up direction
+    Vec3D a = Vec3D_Mult(vNewForward, FloatAsVec(DotProduct(up, vNewForward)));
+    Vec3D vNewUp = Vec3D_Sub(up, a);
+    vNewUp.Normalize();
 
-Vec3D Vec3D_Add(Vec3D v1, Vec3D v2)
-{
-    return { v1.x + v2.x, v1.y + v2.y, v1.z + v2.z };
-}
+    // new right direction
+    Vec3D vNewRight = CrossProduct(vNewUp, vNewForward);
 
-Vec3D Vec3D_Sub(Vec3D v1, Vec3D v2)
-{
-    return { v1.x - v2.x, v1.y - v2.y, v1.z - v2.z };
-}
-
-Vec3D Vec3D_Mult(Vec3D v1, Vec3D v2)
-{
-    return { v1.x * v2.x, v1.y * v2.y, v1.z * v2.z };
-}
-
-Vec3D Vec3D_Div(Vec3D v1, Vec3D v2)
-{
-    return { v1.x / v2.x, v1.y / v2.y, v1.z / v2.z };
+	// Construct Dimensioning and Translation Matrix	
+	Mat4x4 matrix;
+	matrix.m[0][0] = vNewRight.x;	matrix.m[0][1] = vNewRight.y;	matrix.m[0][2] = vNewRight.z;	matrix.m[0][3] = 0.0f;
+	matrix.m[1][0] = vNewUp.x;		matrix.m[1][1] = vNewUp.y;		matrix.m[1][2] = vNewUp.z;		matrix.m[1][3] = 0.0f;
+	matrix.m[2][0] = vNewForward.x;	matrix.m[2][1] = vNewForward.y;	matrix.m[2][2] = vNewForward.z;	matrix.m[2][3] = 0.0f;
+	matrix.m[3][0] = pos.x;			matrix.m[3][1] = pos.y;			matrix.m[3][2] = pos.z;			matrix.m[3][3] = 1.0f;
+	return matrix;
 }
