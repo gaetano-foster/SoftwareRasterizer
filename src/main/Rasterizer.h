@@ -12,5 +12,5 @@ public:
 private:
 	Mat4x4 matProj;
     Camera cCamera;
-    Entity eCube;
+    Entity eMesh;
 };

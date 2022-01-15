@@ -8,41 +8,23 @@ Rasterizer::Rasterizer()
 bool Rasterizer::OnUserCreate()
 {
     matProj.SetProjectionMatrix(0.1f, 1000.0f, cCamera.fFov);
-    eCube.mMesh.vecTris = {
-	    // SOUTH
-	    { 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
-	    { 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
-	    // EAST                                                      
-	    { 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f },
-	    { 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f },
-	    // NORTH                                                     
-	    { 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f },
-	    { 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f },
-	    // WEST                                                      
-	    { 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f },
-	    { 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f,    0.0f, 0.0f, 0.0f },
-	    // TOP                                                       
-	    { 0.0f, 1.0f, 0.0f,    0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f },
-	    { 0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f },
-	    // BOTTOM                                                    
-	    { 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
-	    { 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
-    };
-	eCube.z = 6;
+	if (!eMesh.mMesh.LoadFromObjectFile("res/castle.obj"))
+		return false;
+	eMesh.z = 9;
 	
 	return true;
 }
 
 bool Rasterizer::OnUserUpdate(float fElapsedTime)
 {
-	eCube.yRot += (GetKey(olc::D).bHeld) * fElapsedTime;
-	eCube.yRot -= (GetKey(olc::A).bHeld) * fElapsedTime;
-	eCube.xRot += (GetKey(olc::W).bHeld) * fElapsedTime;
-	eCube.xRot -= (GetKey(olc::S).bHeld) * fElapsedTime;
+	eMesh.yRot += (GetKey(olc::D).bHeld) * fElapsedTime;
+	eMesh.yRot -= (GetKey(olc::A).bHeld) * fElapsedTime;
+	eMesh.xRot += (GetKey(olc::W).bHeld) * fElapsedTime;
+	eMesh.xRot -= (GetKey(olc::S).bHeld) * fElapsedTime;
 
     Clear(olc::BLACK);
 	cCamera.Update();
-	eCube.Update();
-	eCube.Render(cCamera, matProj, this);
+	eMesh.Update();
+	eMesh.Render(cCamera, matProj, this);
 	return true;
 }

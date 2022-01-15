@@ -4,6 +4,8 @@
 #include <cmath>
 #include <vector>
 #include <string>
+#include <fstream>
+#include <strstream>
 #include "../Definitions.h"
 
 struct Vec3D 
