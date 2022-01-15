@@ -3,17 +3,7 @@
 
 void Entity::Update()
 {
-    m_matRotation.Init();
-    
-    m_matRotation.m[0][0] = cosf(zRot) * cosf(yRot);
-    m_matRotation.m[1][0] = cosf(zRot) * sinf(yRot) * sinf(xRot) - sinf(zRot) * cosf(xRot); // row 1
-    m_matRotation.m[2][0] = cosf(zRot) * sinf(yRot) * cosf(xRot) + sinf(zRot) * sinf(xRot);
-    m_matRotation.m[0][1] = sinf(zRot) * cosf(yRot);
-    m_matRotation.m[1][1] = sinf(zRot) * sinf(yRot) * sinf(xRot) + cosf(zRot) * cosf(xRot); // row 2
-    m_matRotation.m[2][1] = sinf(zRot) * sinf(yRot) * cosf(xRot) - cosf(zRot) * sinf(xRot);
-    m_matRotation.m[0][2] = -sinf(yRot);
-    m_matRotation.m[1][2] = cosf(yRot) * sinf(xRot); // row 3
-    m_matRotation.m[2][2] = cosf(yRot) * cosf(xRot);
+    m_matRotation.MakeRotation(xRot, yRot, zRot);
 }
 
 void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine)
@@ -26,14 +16,14 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
         Triangle triProj, triTrans, triRot;
 
         for (int n = 0; n < 3; n++)
-		    MultiplyMatrixVector(&triRot.p[n], tri.p[n], m_matRotation);
+		    MatrixMultiplyVector(&triRot.p[n], tri.p[n], m_matRotation);
 
         triTrans = triRot;
         for (int n = 0; n < 3; n++)// translate the triangle
         {
             triTrans.p[n].x = triRot.p[n].x + x - cCamera.x;
             triTrans.p[n].y = triRot.p[n].y + y - cCamera.y;
-            triTrans.p[n].z = triRot.p[n].z + z - cCamera.z; // we will probably not be rotating the camera along the z axis
+            triTrans.p[n].z = triRot.p[n].z + z - cCamera.z; 
         }
 
         // Use Cross-Product to Get Surface Normal 
@@ -62,7 +52,7 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
         {
             triProj = triTrans;
             for (int n = 0; n < 3; n++) // apply perspective/projection to triangle
-                MultiplyMatrixVector(&triProj.p[n], triTrans.p[n], matProj);
+                MatrixMultiplyVector(&triProj.p[n], triTrans.p[n], matProj);
 
             // Scale mesh into view             
 	        triProj.p[0].x *= 0.5f * (float)SCREEN_WIDTH;

@@ -1,6 +1,6 @@
 #include "Maths.h"
 
-void Mat4x4::Init()
+void Mat4x4::MakeIdentity()
 {
     for (int r = 0; r < 4; r++) 
     {
@@ -11,11 +11,11 @@ void Mat4x4::Init()
     }
 }
 
-void Mat4x4::SetProjectionMatrix(float fNear, float fFar, float fFov)
+void Mat4x4::MakeProjection(float fNear, float fFar, float fFov)
 {
     float fFovRad = 1.0f / tanf(fFov * 0.5f / 180.0f * 3.14159f);
 
-    this->Init();
+    this->MakeIdentity();
     this->m[0][0] = ASPECT_RATIO * fFovRad;
     this->m[1][1] = fFovRad;
     this->m[2][2] = fFar / (fFar - fNear);
@@ -24,57 +24,80 @@ void Mat4x4::SetProjectionMatrix(float fNear, float fFar, float fFov)
     this->m[3][3] = 0.0f;
 }
 
-void MultiplyMatrixVector(Vec3D *o, Vec3D i, Mat4x4 m)
+void Mat4x4::MakeRotation(float xRot, float yRot, float zRot)
 {
-    o->x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + m.m[3][0];
-	o->y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + m.m[3][1];
-	o->z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + m.m[3][2];
-	float w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + m.m[3][3];
+    MakeIdentity();
 
-	if (w != 0.0f) 
-    {
-		o->x /= w; 
-        o->y /= w; 
-        o->z /= w;
-    }
+    m[0][0] = cosf(zRot) * cosf(yRot);
+    m[1][0] = cosf(zRot) * sinf(yRot) * sinf(xRot) - sinf(zRot) * cosf(xRot); // row 1
+    m[2][0] = cosf(zRot) * sinf(yRot) * cosf(xRot) + sinf(zRot) * sinf(xRot);
+
+    m[0][1] = sinf(zRot) * cosf(yRot);
+    m[1][1] = sinf(zRot) * sinf(yRot) * sinf(xRot) + cosf(zRot) * cosf(xRot); // row 2
+    m[2][1] = sinf(zRot) * sinf(yRot) * cosf(xRot) - cosf(zRot) * sinf(xRot);
+
+    m[0][2] = -sinf(yRot);
+    m[1][2] = cosf(yRot) * sinf(xRot);                                        // row 3
+    m[2][2] = cosf(yRot) * cosf(xRot);
 }
 
-bool Mesh::LoadFromObjectFile(std::string sFileName)
+void Mat4x4::MakeTranslation(float x, float y, float z)
 {
-	std::ifstream f(sFileName);
-	if (!f.is_open())
-    {
-        std::cout << "Error! Could not open file " << sFileName <<  "." << std::endl;
-		return false;
-    }
+    MakeIdentity();
+    m[3][0] = x;
+    m[3][1] = y;
+    m[3][2] = z;
+}
 
-	// Local cache of verts
-	std::vector<Vec3D> verts;
+Mat4x4 MultiplyMatrices(mat4x4 &m1, mat4x4 &m2)
+{
+	Mat4x4 matrix;
+	for (int c = 0; c < 4; c++)
+		for (int r = 0; r < 4; r++)
+			matrix.m[r][c] = m1.m[r][0] * m2.m[0][c] + m1.m[r][1] * m2.m[1][c] + m1.m[r][2] * m2.m[2][c] + m1.m[r][3] * m2.m[3][c];
+	return matrix;
+}
 
-	while (!f.eof())
-	{
-		char line[128];
-		f.getline(line, 128);
+Vec3D::Vec3D()
+{
+    x = y = z = 0;
+}
 
-		std::strstream s;
-		s << line;
+Vec3D::Vec3D(float a, float b, float c)
+{
+    x = a;
+    y = b;
+    z = c;
+}
 
-		char junk;
+float Vec3D::Length() const
+{
+    return sqrtf(x * x + y * y + z * z);
+}
 
-		if (line[0] == 'v')
-		{
-			Vec3D v;
-			s >> junk >> v.x >> v.y >> v.z;
-			verts.push_back(v);
-		}
+Vec3D Vec3D::Normal()
+{
+    return { this->x / Length(), this->y / Length(), this->z / Length() };
+}
 
-		if (line[0] == 'f')
-		{
-			int f[3];
-			s >> junk >> f[0] >> f[1] >> f[2];
-			vecTris.push_back({ verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] });
-		}
-	}
+void MatrixMultiplyVector(Vec3D *o, Vec3D i, Mat4x4 m)
+{
+	o->x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + i.w * m.m[3][0];
+	o->y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + i.w * m.m[3][1];
+	o->z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + i.w * m.m[3][2];
+	o->w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + i.w * m.m[3][3];
+}
 
-	return true;
+float DotProduct(Vec3D &v1, Vec3D &v2)
+{
+    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+}
+
+Vec3D CrossProduct(Vec3D &v1, Vec3D &v2)
+{
+    Vec3D v;
+    v.x = v1.y * v2.z - v1.z * v2.y;
+    v.y = v1.z * v2.x - v1.x * v2.z;
+    v.z = v1.x * v2.y - v1.y - v2.x;
+    return v;
 }

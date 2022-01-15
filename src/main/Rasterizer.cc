@@ -7,10 +7,10 @@ Rasterizer::Rasterizer()
 
 bool Rasterizer::OnUserCreate()
 {
-    matProj.SetProjectionMatrix(0.1f, 1000.0f, cCamera.fFov);
+    matProj.MakeProjection(0.1f, 1000.0f, cCamera.fFov);
 	if (!eMesh.mMesh.LoadFromObjectFile("res/castle.obj"))
 		return false;
-	eMesh.z = 9;
+	eMesh.z = 90;
 	
 	return true;
 }
