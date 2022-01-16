@@ -66,6 +66,14 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
                 for (int n = 0; n < 3; n++)
                     triProj.p[n] = Vec3D_Div(triProj.p[n], FloatAsVec(triProj.p[n].w));
 
+               	// X/Y are inverted so put them back
+				triProj.p[0].x *= -1.0f;
+				triProj.p[1].x *= -1.0f;
+				triProj.p[2].x *= -1.0f;
+				triProj.p[0].y *= -1.0f;
+				triProj.p[1].y *= -1.0f;
+				triProj.p[2].y *= -1.0f;
+
                 // Scale mesh into view             
 	            triProj.p[0].x *= 0.5f * (float)SCREEN_WIDTH;
 		        triProj.p[0].y *= 0.5f * (float)SCREEN_HEIGHT;
