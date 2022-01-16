@@ -1,3 +1,4 @@
+#include <SDL.h> // using SDL for input only
 #include "../dynamics/Dynamics.h"
 
 class Rasterizer : public olc::PixelGameEngine
@@ -13,4 +14,5 @@ private:
 	Mat4x4 matProj;
     Camera cCamera;
     Entity eMesh;
+	SDL_Event e;
 };

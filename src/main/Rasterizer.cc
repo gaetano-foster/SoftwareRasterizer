@@ -17,6 +17,13 @@ bool Rasterizer::OnUserCreate()
 
 bool Rasterizer::OnUserUpdate(float fElapsedTime)
 {
+	while (SDL_PollEvent(&e))
+	{
+		SDL_SetRelativeMouseMode(SDL_TRUE);
+        if (e.type == SDL_MOUSEMOTION) {
+            cCamera.yRot += (e.motion.xrel) * 0.1f * fElapsedTime;
+        }
+	}
 	eMesh.yRot += fElapsedTime;
 
 	if (GetKey(olc::W).bHeld)
@@ -30,9 +37,6 @@ bool Rasterizer::OnUserUpdate(float fElapsedTime)
 		cCamera.z -= (GetKey(olc::S).bHeld) * cosf(cCamera.yRot) * 8 * fElapsedTime;
 		cCamera.x -= (GetKey(olc::S).bHeld) * sinf(cCamera.yRot) * 8 * fElapsedTime;
 	}
-
-	cCamera.yRot -= (GetKey(olc::D).bHeld) * fElapsedTime;
-	cCamera.yRot += (GetKey(olc::A).bHeld) * fElapsedTime;
 
 	cCamera.y -= (GetKey(olc::SHIFT).bHeld) * 8 * fElapsedTime;
 	cCamera.y += (GetKey(olc::SPACE).bHeld) * 8 * fElapsedTime;
