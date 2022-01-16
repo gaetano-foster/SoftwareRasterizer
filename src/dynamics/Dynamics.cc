@@ -17,11 +17,13 @@ void Entity::Update()
 void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine)
 {
     std::vector<RasterableTriangle> vecTrianglesToRaster;
+    Vec3D vCamera = { cCamera.x, cCamera.y, cCamera.z };
+    Mat4x4 matView = cCamera.matView;
 
     // get triangles to be rastered
     for (auto tri : mMesh.vecTris)
     {
-        Triangle triProj, triTrans;
+        Triangle triProj, triTrans, triViewed;
 
         for (int n = 0; n < 3; n++)
 		    MatrixMultiplyVector(&triTrans.p[n], tri.p[n], m_matWorld);
@@ -33,13 +35,17 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
 
 	    vNormal = CrossProduct(line1, line2);
 	    vNormal.Normalize(); // it's normally normal to normalize a normal
-        Vec3D vCameraRay = Vec3D_Sub(triTrans.p[0], { cCamera.x, cCamera.y, cCamera.z });
+        Vec3D vCameraRay = Vec3D_Sub(triTrans.p[0], vCamera);
         
         if  (DotProduct(vNormal, vCameraRay) < 0) 
         {
-            triProj = triTrans;
+            triViewed = triTrans;
+            for (int n = 0; n < 3; n++) // world space -> screen space
+                MatrixMultiplyVector(&triViewed.p[n], triTrans.p[n], matView);
+
+            triProj = triViewed;
             for (int n = 0; n < 3; n++) // apply perspective/projection to triangle
-                MatrixMultiplyVector(&triProj.p[n], triTrans.p[n], matProj);
+                MatrixMultiplyVector(&triProj.p[n], triViewed.p[n], matProj);
             
             for (int n = 0; n < 3; n++)
                 triProj.p[n] = Vec3D_Div(triProj.p[n], FloatAsVec(triProj.p[n].w));
@@ -88,5 +94,13 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
 
 void Camera::Update()
 {
+    Vec3D vCamera = { x, y, z };
 
+    Vec3D vUp = { 0, 1, 0 };
+    Vec3D vTarget = { 0, 0, 1 }; 
+    matRot.MakeRotation(xRot, yRot, zRot);
+    MatrixMultiplyVector(&vLookDir, vTarget, matRot);
+    vTarget = Vec3D_Add(vCamera, vLookDir);
+
+    matView = MatrixInverse(MatrixPointAt(vCamera, vTarget, vUp));
 }

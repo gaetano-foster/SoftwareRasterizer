@@ -19,6 +19,9 @@ class Camera : public Dynamic
 {
 public:
     float fFov = 90.0f;
+    Vec3D vLookDir = { 0, 0, 1 };
+    Mat4x4 matRot;
+    Mat4x4 matView; 
 
 public:
     void Update() override;
