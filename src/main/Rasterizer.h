@@ -1,4 +1,3 @@
-#include <SDL.h> // using SDL for input only
 #include "../dynamics/Dynamics.h"
 
 class Rasterizer : public olc::PixelGameEngine
