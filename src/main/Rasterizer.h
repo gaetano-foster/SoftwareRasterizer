@@ -13,5 +13,4 @@ private:
 	Mat4x4 matProj;
     Camera cCamera;
     Entity eMesh;
-	SDL_Event e;
 };
