@@ -49,6 +49,7 @@ namespace vec
     Vec3D Vec3D_Sub(Vec3D v1, Vec3D v2);
     Vec3D Vec3D_Mult(Vec3D v1, Vec3D v2);
     Vec3D Vec3D_Div(Vec3D v1, Vec3D v2);
+    Vec3D Vec3D_IntersectPlane(Vec3D &plane_p, Vec3D &plane_n, Vec3D &lineStart, Vec3D &lineEnd)
     float DotProduct(Vec3D &v1, Vec3D &v2);
     Vec3D CrossProduct(Vec3D &v1, Vec3D &v2);
     Vec3D FloatAsVec(float fVector); // for ease of math

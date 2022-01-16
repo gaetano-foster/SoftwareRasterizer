@@ -37,6 +37,18 @@ Vec3D vec::CrossProduct(Vec3D &v1, Vec3D &v2)
     return v;
 }
 
+Vec3D vec::Vec3D_IntersectPlane(Vec3D &plane_p, Vec3D &plane_n, Vec3D &lineStart, Vec3D &lineEnd)
+{
+	plane_n.Normalize();
+	float plane_d = -DotProduct(plane_n, plane_p);
+	float ad = DotProduct(lineStart, plane_n);
+	float bd = DotProduct(lineEnd, plane_n);
+	float t = (-plane_d - ad) / (bd - ad);
+	Vec3D lineStartToEnd = Vec3D_Sub(lineEnd, lineStart);
+	Vec3D lineToIntersect = Vec3D_Mult(lineStartToEnd, FloatAsVec(t));
+	return Vec3D_Add(lineStart, lineToIntersect);
+}
+
 Vec3D vec::Vec3D_Add(Vec3D v1, Vec3D v2)
 {
     return { v1.x + v2.x, v1.y + v2.y, v1.z + v2.z };
