@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <list>
 #include "Dynamics.h"
 
 using namespace vec;
@@ -39,41 +40,49 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
         
         if  (DotProduct(vNormal, vCameraRay) < 0) 
         {
-            triViewed = triTrans;
-            for (int n = 0; n < 3; n++) // world space -> screen space
-                MatrixMultiplyVector(&triViewed.p[n], triTrans.p[n], matView);
-
-            triProj = triViewed;
-            for (int n = 0; n < 3; n++) // apply perspective/projection to triangle
-                MatrixMultiplyVector(&triProj.p[n], triViewed.p[n], matProj);
-            
-            for (int n = 0; n < 3; n++)
-                triProj.p[n] = Vec3D_Div(triProj.p[n], FloatAsVec(triProj.p[n].w));
-
-            // Scale mesh into view             
-	        triProj.p[0].x *= 0.5f * (float)SCREEN_WIDTH;
-		    triProj.p[0].y *= 0.5f * (float)SCREEN_HEIGHT;
-	        triProj.p[1].x *= 0.5f * (float)SCREEN_WIDTH;
-	        triProj.p[1].y *= 0.5f * (float)SCREEN_HEIGHT;
-	        triProj.p[2].x *= 0.5f * (float)SCREEN_WIDTH;
-	        triProj.p[2].y *= 0.5f * (float)SCREEN_HEIGHT;
-
-            triProj.p[0].x += SCREEN_WIDTH / 2; 
-            triProj.p[0].y += SCREEN_HEIGHT / 2;
-		    triProj.p[1].x += SCREEN_WIDTH / 2;
-            triProj.p[1].y += SCREEN_HEIGHT / 2;
-		    triProj.p[2].x += SCREEN_WIDTH / 2; 
-            triProj.p[2].y += SCREEN_HEIGHT / 2;
-
             // Illumination 
             Vec3D vLightDir = (Vec3D) { 0.5f, 0.0f, -1.0f }; 
             vLightDir.Normalize();
 
-		    // How similar is normal to light direction?
+            // How similar is normal to light direction?
 		    float fLightingVal = (DotProduct(vLightDir, vNormal)) * 255; // we multiply by 255 for illumination
-            fLightingVal = (fLightingVal > 255) ? fLightingVal = 255 : fLightingVal = (fLightingVal < 20) ? fLightingVal = 20 : fLightingVal = fLightingVal;
+            fLightingVal = (fLightingVal > 255) ? fLightingVal = 255 : fLightingVal = (fLightingVal < 10) ? fLightingVal = 10 : fLightingVal = fLightingVal;
+            olc::Pixel pColor = olc::Pixel(fLightingVal, fLightingVal, fLightingVal, 255);
 
-            vecTrianglesToRaster.push_back({ triProj, olc::Pixel(fLightingVal, fLightingVal, fLightingVal, 255) });
+            triViewed = triTrans;
+            for (int n = 0; n < 3; n++) // world space -> view space
+                MatrixMultiplyVector(&triViewed.p[n], triTrans.p[n], matView);
+
+            int nClippedTriangles = 0;
+            Triangle clipped[2];
+            nClippedTriangles = TriangleClipAgainstPlane({ 0, 0, 0.1f }, { 0, 0, 1 }, triViewed, clipped[0], clipped[1]);
+
+            for (int i = 0; i < nClippedTriangles; i++)
+            {
+                triProj = triViewed;
+                for (int n = 0; n < 3; n++) // 3D -> 2D
+                    MatrixMultiplyVector(&triProj.p[n], clipped[i].p[n], matProj);
+
+                for (int n = 0; n < 3; n++)
+                    triProj.p[n] = Vec3D_Div(triProj.p[n], FloatAsVec(triProj.p[n].w));
+
+                // Scale mesh into view             
+	            triProj.p[0].x *= 0.5f * (float)SCREEN_WIDTH;
+		        triProj.p[0].y *= 0.5f * (float)SCREEN_HEIGHT;
+	            triProj.p[1].x *= 0.5f * (float)SCREEN_WIDTH;
+	            triProj.p[1].y *= 0.5f * (float)SCREEN_HEIGHT;
+	            triProj.p[2].x *= 0.5f * (float)SCREEN_WIDTH;
+	            triProj.p[2].y *= 0.5f * (float)SCREEN_HEIGHT;
+
+                triProj.p[0].x += SCREEN_WIDTH / 2; 
+                triProj.p[0].y += SCREEN_HEIGHT / 2;
+		        triProj.p[1].x += SCREEN_WIDTH / 2;
+                triProj.p[1].y += SCREEN_HEIGHT / 2;
+		        triProj.p[2].x += SCREEN_WIDTH / 2; 
+                triProj.p[2].y += SCREEN_HEIGHT / 2;
+
+                vecTrianglesToRaster.push_back({ triProj, pColor });
+            }
         }
     }
 
@@ -86,9 +95,56 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
     });
 
     // raster triangles
-    for (auto &triangle : vecTrianglesToRaster)
+    for (auto &triToRaster : vecTrianglesToRaster)
     {
-        triangle.Raster(engine);
+		// Clip triangles against all four screen edges, this could yield
+		// a bunch of triangles, so create a queue that we traverse to 
+		//  ensure we only test new triangles generated against planes
+		Triangle clipped[2];
+		std::list<Triangle> listTriangles;
+
+		// Add initial triangle
+		listTriangles.push_back(triToRaster.tri);
+		int nNewTriangles = 1;
+
+		for (int p = 0; p < 4; p++)
+		{
+			int nTrisToAdd = 0;
+			while (nNewTriangles > 0)
+			{
+				// Take triangle from front of queue
+				Triangle test = listTriangles.front();
+				listTriangles.pop_front();
+				nNewTriangles--;
+
+				// Clip it against a plane. We only need to test each 
+				// subsequent plane, against subsequent new triangles
+				// as all triangles after a plane clip are guaranteed
+				// to lie on the inside of the plane. I like how this
+				// comment is almost completely and utterly justified
+				switch (p)
+				{
+				case 0:	nTrisToAdd = TriangleClipAgainstPlane({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+				case 1:	nTrisToAdd = TriangleClipAgainstPlane({ 0.0f, (float)SCREEN_HEIGHT - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+				case 2:	nTrisToAdd = TriangleClipAgainstPlane({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+				case 3:	nTrisToAdd = TriangleClipAgainstPlane({ (float)SCREEN_WIDTH - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+				}
+
+				// Clipping may yield a variable number of triangles, so
+				// add these new ones to the back of the queue for subsequent
+				// clipping against next planes
+				for (int w = 0; w < nTrisToAdd; w++)
+					listTriangles.push_back(clipped[w]);
+			}
+			nNewTriangles = listTriangles.size();
+		}
+
+		// Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
+		for (auto &t : listTriangles)
+		{
+            RasterableTriangle tri = { t, triToRaster.pColor };
+			tri.Raster(engine, false);
+		}
     }
 }
 
