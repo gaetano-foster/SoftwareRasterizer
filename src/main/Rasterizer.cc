@@ -33,6 +33,7 @@ bool Rasterizer::OnUserUpdate(float fElapsedTime)
 
 	cCamera.y -= (GetKey(olc::SHIFT).bHeld) * 8 * fElapsedTime;
 	cCamera.y += (GetKey(olc::SPACE).bHeld) * 8 * fElapsedTime;
+	olc_UpdateMouse(10, 10);
 
     Clear(olc::BLACK);
 	cCamera.Update();
