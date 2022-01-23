@@ -3,6 +3,7 @@
 Rasterizer::Rasterizer() 
 {
 	sAppName = "SoftwareRasterizer";
+	olc_hideCursor = true;
 }
 
 bool Rasterizer::OnUserCreate()
@@ -20,7 +21,6 @@ bool Rasterizer::OnUserCreate()
 bool Rasterizer::OnUserUpdate(float fElapsedTime)
 {
 	int nTempMouseX, nTempMouseY;
-	olc_hideCursor = true;
 	eMesh.yRot += fElapsedTime;
 
 	if (GetKey(olc::W).bHeld)
@@ -62,8 +62,11 @@ bool Rasterizer::OnUserUpdate(float fElapsedTime)
 		if (bRegisterMouse)
 		{
 			cCamera.yRot += nTempMouseX * 2 * fElapsedTime;
-			if (!(cCamera.xRot - nTempMouseY * 2 * fElapsedTime >= 1.5708f) && !(cCamera.xRot - nTempMouseY * 2 * fElapsedTime <= -1.5708f))
-				cCamera.xRot -= nTempMouseY * 2 * fElapsedTime;
+			cCamera.xRot -= nTempMouseY * 2 * fElapsedTime;
+			if (cCamera.xRot > 1.5707f) 
+				cCamera.xRot = 1.5707f; 
+			else if (cCamera.xRot < -1.5707f)
+				cCamera.xRot = -1.5707f; 
 			bRegisterMouse = false;
 		}
 		else
