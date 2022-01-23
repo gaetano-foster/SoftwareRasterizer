@@ -1,3 +1,4 @@
+#include <X11/Xlib.h>
 #include "../dynamics/Dynamics.h"
 
 class Rasterizer : public olc::PixelGameEngine
