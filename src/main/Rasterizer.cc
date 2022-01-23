@@ -25,14 +25,26 @@ bool Rasterizer::OnUserUpdate(float fElapsedTime)
 
 	if (GetKey(olc::W).bHeld)
 	{
-		cCamera.z += (GetKey(olc::W).bHeld) * cosf(cCamera.yRot) * 8 * fElapsedTime;
-		cCamera.x += (GetKey(olc::W).bHeld) * sinf(cCamera.yRot) * 8 * fElapsedTime;
+		cCamera.z += cosf(cCamera.yRot) * 8 * fElapsedTime;
+		cCamera.x += sinf(cCamera.yRot) * 8 * fElapsedTime;
 	}
 
 	if (GetKey(olc::S).bHeld)
 	{
-		cCamera.z -= (GetKey(olc::S).bHeld) * cosf(cCamera.yRot) * 8 * fElapsedTime;
-		cCamera.x -= (GetKey(olc::S).bHeld) * sinf(cCamera.yRot) * 8 * fElapsedTime;
+		cCamera.z -= cosf(cCamera.yRot) * 8 * fElapsedTime;
+		cCamera.x -= sinf(cCamera.yRot) * 8 * fElapsedTime;
+	}
+
+	if (GetKey(olc::A).bHeld)
+	{
+		cCamera.z -= sinf(cCamera.yRot) * 8 * fElapsedTime;
+		cCamera.x += cosf(cCamera.yRot) * 8 * fElapsedTime;
+	}
+
+	if (GetKey(olc::D).bHeld)
+	{
+		cCamera.z += sinf(cCamera.yRot) * 8 * fElapsedTime;
+		cCamera.x -= cosf(cCamera.yRot) * 8 * fElapsedTime;
 	}
 
 	cCamera.y -= (GetKey(olc::SHIFT).bHeld) * 8 * fElapsedTime;
@@ -49,8 +61,9 @@ bool Rasterizer::OnUserUpdate(float fElapsedTime)
 	{
 		if (bRegisterMouse)
 		{
-			cCamera.yRot += ((nTempMouseX != 0) ? (nTempMouseX) : 0) * 2 * fElapsedTime;
-			cCamera.xRot -= ((nTempMouseY != 0) ? (nTempMouseY) : 0) * 2 * fElapsedTime;
+			cCamera.yRot += nTempMouseX * 2 * fElapsedTime;
+			if (!(cCamera.xRot - nTempMouseY * 2 * fElapsedTime >= 1.5708f) && !(cCamera.xRot - nTempMouseY * 2 * fElapsedTime <= -1.5708f))
+				cCamera.xRot -= nTempMouseY * 2 * fElapsedTime;
 			bRegisterMouse = false;
 		}
 		else
