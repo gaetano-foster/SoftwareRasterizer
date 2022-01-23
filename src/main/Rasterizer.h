@@ -13,4 +13,6 @@ private:
 	Mat4x4 matProj;
     Camera cCamera;
     Entity eMesh;
+	int nLastMouseX, nLastMouseY, nMouseX, nMouseY;
+	bool bRegisterMouse;
 };
