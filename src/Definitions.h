@@ -1,7 +1,6 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 
-#define OLC_PLATFORM_X11
 #include <olcPixelGameEngine.h>
 
 #define SCREEN_WIDTH        1280
