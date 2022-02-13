@@ -15,4 +15,5 @@ private:
     Entity eMesh;
 	int nLastMouseX, nLastMouseY, nMouseX, nMouseY;
 	bool bRegisterMouse;
+	float *pDepthBuffer;
 };

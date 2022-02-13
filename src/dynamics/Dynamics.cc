@@ -2,9 +2,6 @@
 #include <list>
 #include "Dynamics.h"
 
-using namespace vec;
-using namespace mat4;
-
 void Entity::Update()
 {
     Mat4x4 matTrans, matRot;
@@ -15,7 +12,7 @@ void Entity::Update()
     m_matWorld = MultiplyMatrices(matRot, matTrans);
 }
 
-void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine)
+void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine, float *pDepthBuffer)
 {
     std::vector<RasterableTriangle> vecTrianglesToRaster;
     Vec3D vCamera = { cCamera.x, cCamera.y, cCamera.z };
@@ -27,7 +24,10 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
         Triangle triProj, triTrans, triViewed;
 
         for (int n = 0; n < 3; n++)
+        {
 		    MatrixMultiplyVector(&triTrans.p[n], tri.p[n], m_matWorld);
+            triTrans.t[n] = tri.t[n];
+        }
 
         // Use Cross-Product to Get Surface Normal 
 		Vec3D vNormal, line1, line2;
@@ -47,11 +47,15 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
             // How similar is normal to light direction?
 		    float fLightingVal = (DotProduct(vLightDir, vNormal)) * 255; // we multiply by 255 for illumination
             fLightingVal = (fLightingVal > 255) ? fLightingVal = 255 : fLightingVal = (fLightingVal < 10) ? fLightingVal = 10 : fLightingVal = fLightingVal;
-            olc::Pixel pColor = olc::Pixel(fLightingVal, fLightingVal, fLightingVal, 255);
+            fLightingVal = 255 - fLightingVal;
+            fLightingVal /= 20.0f;
 
             triViewed = triTrans;
             for (int n = 0; n < 3; n++) // world space -> view space
+            {
                 MatrixMultiplyVector(&triViewed.p[n], triTrans.p[n], matView);
+                triViewed.t[n] = triTrans.t[n];
+            }
 
             int nClippedTriangles = 0;
             Triangle clipped[2];
@@ -61,7 +65,17 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
             {
                 triProj = triViewed;
                 for (int n = 0; n < 3; n++) // 3D -> 2D
+                {
                     MatrixMultiplyVector(&triProj.p[n], clipped[i].p[n], matProj);
+                    triProj.t[n] = clipped->t[n];
+                }
+
+                for (int n = 0; n < 3; n++)
+                {
+                    triProj.t[n].x /= triProj.p[n].w;
+                    triProj.t[n].y /= triProj.p[n].w;
+                    triProj.t[n].w = 1.0f / triProj.p[n].w;
+                }
 
                 for (int n = 0; n < 3; n++)
                     triProj.p[n] = Vec3D_Div(triProj.p[n], FloatAsVec(triProj.p[n].w));
@@ -89,18 +103,18 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
 		        triProj.p[2].x += SCREEN_WIDTH / 2; 
                 triProj.p[2].y += SCREEN_HEIGHT / 2;
 
-                vecTrianglesToRaster.push_back({ triProj, pColor });
+                vecTrianglesToRaster.push_back({ triProj, fLightingVal });
             }
         }
     }
 
     // sort triangles back to front
-    sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](RasterableTriangle &t1, RasterableTriangle &t2) 
+    /*sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](RasterableTriangle &t1, RasterableTriangle &t2) 
     {
         float z1 = (t1.tri.p[0].z + t1.tri.p[1].z + t1.tri.p[2].z) / 3.0f;
         float z2 = (t2.tri.p[0].z + t2.tri.p[1].z + t2.tri.p[2].z) / 3.0f;
         return z1 > z2;
-    });
+    });*/
 
     // raster triangles
     for (auto &triToRaster : vecTrianglesToRaster)
@@ -150,8 +164,8 @@ void Entity::Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine
 		// Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
 		for (auto &t : listTriangles)
 		{
-            RasterableTriangle tri = { t, triToRaster.pColor };
-			tri.Raster(engine, false);
+            RasterableTriangle tri = { t, triToRaster.fBrightness };
+			tri.Raster(engine, mMesh.sprTexture, pDepthBuffer);
 		}
     }
 }

@@ -8,12 +8,15 @@ Rasterizer::Rasterizer()
 
 bool Rasterizer::OnUserCreate()
 {
+	pDepthBuffer = new float[ScreenWidth() * ScreenHeight()];
     matProj.MakeProjection(0.1f, 1000.0f, cCamera.fFov);
-	if (!eMesh.mMesh.LoadFromObjectFile("res/castle.obj"))
+	if (!eMesh.mMesh.LoadFromObjectFile("res/castle.obj", true))
 		return false;
 	eMesh.z = 9;
 	olc_SetMousePos(ScreenWidth() / 2, ScreenHeight() / 2);
 	bRegisterMouse = true;
+
+	eMesh.mMesh.sprTexture = new olc::Sprite("res/colors.png");
 	
 	return true;
 }
@@ -21,7 +24,6 @@ bool Rasterizer::OnUserCreate()
 bool Rasterizer::OnUserUpdate(float fElapsedTime)
 {
 	int nTempMouseX, nTempMouseY;
-	eMesh.yRot += fElapsedTime;
 
 	if (GetKey(olc::W).bHeld)
 	{
@@ -61,8 +63,8 @@ bool Rasterizer::OnUserUpdate(float fElapsedTime)
 	{
 		if (bRegisterMouse)
 		{
-			cCamera.yRot += nTempMouseX * 2 * fElapsedTime;
-			cCamera.xRot -= nTempMouseY * 2 * fElapsedTime;
+			cCamera.yRot += nTempMouseX * 2 * PX_SIZE * fElapsedTime;
+			cCamera.xRot -= nTempMouseY * 2 * PX_SIZE * fElapsedTime;
 			if (cCamera.xRot > 1.5707f) 
 				cCamera.xRot = 1.5707f; 
 			else if (cCamera.xRot < -1.5707f)
@@ -74,12 +76,18 @@ bool Rasterizer::OnUserUpdate(float fElapsedTime)
 			bRegisterMouse = true;
 		}
 
-		olc_SetMousePos(ScreenWidth() / 2, ScreenHeight() / 2);
+		if (!GetKey(olc::ESCAPE).bHeld) {
+			olc_SetMousePos(ScreenWidth() / 2, ScreenHeight() / 2);
+		}
 	}
 
     Clear(olc::BLACK);
+
+	for (int i = 0; i < ScreenWidth()*ScreenHeight(); i++)
+		pDepthBuffer[i] = 0;
+		
 	cCamera.Update();
 	eMesh.Update();
-	eMesh.Render(cCamera, matProj, this);
+	eMesh.Render(cCamera, matProj, this, pDepthBuffer);
 	return true;
 }

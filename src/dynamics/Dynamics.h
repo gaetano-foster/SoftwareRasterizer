@@ -36,7 +36,7 @@ public:
 
 public:
     void Update() override;
-    void Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine);
+    void Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine, float *pDepthBuffer);
 
 private:
     Mat4x4 m_matWorld;
