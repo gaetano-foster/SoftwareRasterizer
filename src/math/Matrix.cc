@@ -1,8 +1,5 @@
 #include "Maths.h"
 
-using namespace vec;
-using namespace mat4;
-
 void Mat4x4::MakeIdentity()
 {
     for (int r = 0; r < 4; r++) 
@@ -52,7 +49,7 @@ void Mat4x4::MakeTranslation(float x, float y, float z)
     m[3][2] = z;
 }
 
-Mat4x4 mat4::MultiplyMatrices(Mat4x4 &m1, Mat4x4 &m2)
+Mat4x4 MultiplyMatrices(Mat4x4 &m1, Mat4x4 &m2)
 {
 	Mat4x4 matrix;
 	for (int c = 0; c < 4; c++)
@@ -61,7 +58,7 @@ Mat4x4 mat4::MultiplyMatrices(Mat4x4 &m1, Mat4x4 &m2)
 	return matrix;
 }
 
-void mat4::MatrixMultiplyVector(Vec3D *o, Vec3D i, Mat4x4 m)
+void MatrixMultiplyVector(Vec3D *o, Vec3D i, Mat4x4 m)
 {
 	o->x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + i.w * m.m[3][0];
 	o->y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + i.w * m.m[3][1];
@@ -69,7 +66,7 @@ void mat4::MatrixMultiplyVector(Vec3D *o, Vec3D i, Mat4x4 m)
 	o->w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + i.w * m.m[3][3];
 }
 
-Mat4x4 mat4::MatrixPointAt(Vec3D pos, Vec3D target, Vec3D up)
+Mat4x4 MatrixPointAt(Vec3D pos, Vec3D target, Vec3D up)
 {
     // new forward direction
     Vec3D vNewForward = Vec3D_Sub(target, pos);
@@ -92,7 +89,7 @@ Mat4x4 mat4::MatrixPointAt(Vec3D pos, Vec3D target, Vec3D up)
 	return matrix;
 }
 
-Mat4x4 mat4::MatrixInverse(Mat4x4 m)
+Mat4x4 MatrixInverse(Mat4x4 m)
 {
 	Mat4x4 matrix;
 	matrix.m[0][0] = m.m[0][0]; matrix.m[0][1] = m.m[1][0]; matrix.m[0][2] = m.m[2][0]; matrix.m[0][3] = 0.0f;
