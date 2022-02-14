@@ -10,21 +10,17 @@ bool Rasterizer::OnUserCreate()
 {
 	pDepthBuffer = new float[ScreenWidth() * ScreenHeight()];
     matProj.MakeProjection(0.1f, 1000.0f, cCamera.fFov);
-	if (!eMesh.mMesh.LoadFromObjectFile("res/castle.obj", true))
+	if (!eMesh.mMesh.LoadFromObjectFile("res/man.obj", true))
 		return false;
 	eMesh.z = 9;
-	olc_SetMousePos(ScreenWidth() / 2, ScreenHeight() / 2);
-	bRegisterMouse = true;
 
-	eMesh.mMesh.sprTexture = new olc::Sprite("res/colors.png");
+	eMesh.mMesh.sprTexture = new olc::Sprite("res/man.png");
 	
 	return true;
 }
 
 bool Rasterizer::OnUserUpdate(float fElapsedTime)
 {
-	int nTempMouseX, nTempMouseY;
-
 	if (GetKey(olc::W).bHeld)
 	{
 		cCamera.z += cosf(cCamera.yRot) * 8 * fElapsedTime;
@@ -52,40 +48,21 @@ bool Rasterizer::OnUserUpdate(float fElapsedTime)
 	cCamera.y -= (GetKey(olc::SHIFT).bHeld) * 8 * fElapsedTime;
 	cCamera.y += (GetKey(olc::SPACE).bHeld) * 8 * fElapsedTime;
 
-	nMouseX = GetMouseX();
-	nMouseY = GetMouseY();
-	nTempMouseX = nMouseX - nLastMouseX;
-	nTempMouseY = nMouseY - nLastMouseY;
-	nLastMouseX = nMouseX;
-	nLastMouseY = nMouseY;
-
-	if (nTempMouseX != 0 || nTempMouseY != 0)
-	{
-		if (bRegisterMouse)
-		{
-			cCamera.yRot += nTempMouseX * 2 * PX_SIZE * fElapsedTime;
-			cCamera.xRot -= nTempMouseY * 2 * PX_SIZE * fElapsedTime;
-			if (cCamera.xRot > 1.5707f) 
-				cCamera.xRot = 1.5707f; 
-			else if (cCamera.xRot < -1.5707f)
-				cCamera.xRot = -1.5707f; 
-			bRegisterMouse = false;
-		}
-		else
-		{
-			bRegisterMouse = true;
-		}
-
-		if (!GetKey(olc::ESCAPE).bHeld) {
-			olc_SetMousePos(ScreenWidth() / 2, ScreenHeight() / 2);
-		}
-	}
+	cCamera.yRot += (GetKey(olc::RIGHT).bHeld) * 2 * fElapsedTime;
+	cCamera.yRot -= (GetKey(olc:: LEFT).bHeld) * 2 * fElapsedTime;
+	cCamera.xRot -= (GetKey(olc::   UP).bHeld) * 2 * fElapsedTime;
+	cCamera.xRot += (GetKey(olc:: DOWN).bHeld) * 2 * fElapsedTime;
+	
+	if (cCamera.xRot > 1.5707f) 
+		cCamera.xRot = 1.5707f; 
+	else if (cCamera.xRot < -1.5707f)
+		cCamera.xRot = -1.5707f;
 
     Clear(olc::BLACK);
 
 	for (int i = 0; i < ScreenWidth()*ScreenHeight(); i++)
 		pDepthBuffer[i] = 0;
-		
+
 	cCamera.Update();
 	eMesh.Update();
 	eMesh.Render(cCamera, matProj, this, pDepthBuffer);
