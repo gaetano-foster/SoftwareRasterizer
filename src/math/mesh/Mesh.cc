@@ -1,8 +1,10 @@
+#include <algorithm>
+#include <list>
 #include "Mesh.h"
 
-bool Mesh::LoadFromObjectFile(std::string sFileName, bool bHasTexture = false)
+bool Mesh::LoadFromObjectFile(std::string file_name, bool has_texture = false)
 {
-	std::ifstream f(sFileName);
+	std::ifstream f(file_name);
 	if (!f.is_open())
 		return false;
 
@@ -10,8 +12,7 @@ bool Mesh::LoadFromObjectFile(std::string sFileName, bool bHasTexture = false)
 	std::vector<Vec3D> verts;
 	std::vector<Vec2D> texs;
 
-	while (!f.eof())
-	{
+	while (!f.eof()) {
 		char line[128];
 		f.getline(line, 128);
 
@@ -20,10 +21,8 @@ bool Mesh::LoadFromObjectFile(std::string sFileName, bool bHasTexture = false)
 
 		char junk;
 
-		if (line[0] == 'v')
-		{
-			if (line[1] == 't')
-			{
+		if (line[0] == 'v') {
+			if (line[1] == 't') {
 				Vec2D v;
 				s >> junk >> junk >> v.x >> v.y;
 				// A little hack for the spyro texture
@@ -31,72 +30,211 @@ bool Mesh::LoadFromObjectFile(std::string sFileName, bool bHasTexture = false)
 				//v.v = 1.0f - v.v;
 				texs.push_back(v);
 			}
-			else
-			{
+			else {
 				Vec3D v;
 				s >> junk >> v.x >> v.y >> v.z;
 				verts.push_back(v);
 			}
 		}
 
-		if (!bHasTexture)
-		{
-			if (line[0] == 'f')
-			{
+		if (!has_texture) {
+			if (line[0] == 'f') {
 				int f[3];
 				s >> junk >> f[0] >> f[1] >> f[2];
-				vecTris.push_back({ verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] });
+				tris.push_back({ verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] });
 			}
 		}
-		else
-		{
-			if (line[0] == 'f')
-			{
+		else {
+			if (line[0] == 'f') {
 				s >> junk;
 
 				std::string tokens[6];
-				int nTokenCount = -1;
+				int token_count = -1;
 
-
-				while (!s.eof())
-				{
+				while (!s.eof()) {
 					char c = s.get();
 					if (c == ' ' || c == '/')
-						nTokenCount++;
+						token_count++;
 					else
-						tokens[nTokenCount].append(1, c);
+						tokens[token_count].append(1, c);
 				}
 
-				tokens[nTokenCount].pop_back();
+				tokens[token_count].pop_back();
 
-
-				vecTris.push_back({ verts[stoi(tokens[0]) - 1], verts[stoi(tokens[2]) - 1], verts[stoi(tokens[4]) - 1],
+				tris.push_back({ verts[stoi(tokens[0]) - 1], verts[stoi(tokens[2]) - 1], verts[stoi(tokens[4]) - 1],
 					texs[stoi(tokens[1]) - 1], texs[stoi(tokens[3]) - 1], texs[stoi(tokens[5]) - 1] });
-
 			}
-
 		}
 	}
 	return true;
 }
 
-void RasterableTriangle::Raster(olc::PixelGameEngine *engine, olc::Sprite *sprTex, float *pDepthBuffer, bool wireframe = false)
-{
-	TexturedTriangle(tri.p[0].x, tri.p[0].y, tri.t[0].x, tri.t[0].y, tri.t[0].w,
-					 tri.p[1].x, tri.p[1].y, tri.t[1].x, tri.t[1].y, tri.t[1].w,
-					 tri.p[2].x, tri.p[2].y, tri.t[2].x, tri.t[2].y, tri.t[2].w, 
-					 sprTex, engine, pDepthBuffer, fBrightness);
+void Mesh::Render(Vec3D vCamera, Mat4x4 matProj, olc::PixelGameEngine *engine, float *depth_buffer, Mat4x4 matWorld, Mat4x4 matView, bool wireframe = false) {
+	std::vector<RasterableTriangle> triangles_to_raster;
+
+    // get triangles to be rastered
+    for (auto tri : tris) {
+        Triangle triProj, triTrans, triViewed;
+
+        for (int n = 0; n < 3; n++) {
+		    MatrixMultiplyVector(&triTrans.p[n], tri.p[n], matWorld);
+            triTrans.t[n] = tri.t[n];
+        }
+
+        // Use Cross-Product to Get Surface normal 
+		Vec3D vNormal, line1, line2;
+		line1 = Vec3D_Sub(triTrans.p[1], triTrans.p[0]);
+        line2 = Vec3D_Sub(triTrans.p[2], triTrans.p[0]);
+
+	    vNormal = CrossProduct(line1, line2);
+	    vNormal.normalize(); // it's normally normal to normalize a normal
+        Vec3D vCameraRay = Vec3D_Sub(triTrans.p[0], vCamera);
+        
+        if  (DotProduct(vNormal, vCameraRay) < 0) {
+            // Illumination 
+            Vec3D vLightDir = (Vec3D) { 0.5f, 0.0f, -1.0f }; 
+            vLightDir.normalize();
+
+            // How similar is normal to light direction?
+		    float fLightingVal = (DotProduct(vLightDir, vNormal)) * 255; // we multiply by 255 for illumination
+            fLightingVal = (fLightingVal > 230) ? fLightingVal = 230 : fLightingVal = (fLightingVal < 20) ? fLightingVal = 20 : fLightingVal = fLightingVal;
+            fLightingVal = 240 - fLightingVal;
+            fLightingVal /= 10.0f;
+
+            triViewed = triTrans;
+            for (int n = 0; n < 3; n++) { // world space -> view space
+                MatrixMultiplyVector(&triViewed.p[n], triTrans.p[n], matView);
+                triViewed.t[n] = triTrans.t[n];
+            }
+
+            int num_clipped_tris = 0;
+            Triangle clipped[2];
+            num_clipped_tris = TriangleClipAgainstPlane({ 0, 0, 0.1f }, { 0, 0, 1 }, triViewed, clipped[0], clipped[1]);
+
+            for (int i = 0; i < num_clipped_tris; i++) {
+                triProj = triViewed;
+                for (int n = 0; n < 3; n++) { // 3D -> 2D
+                    MatrixMultiplyVector(&triProj.p[n], clipped[i].p[n], matProj);
+                    triProj.t[n] = clipped->t[n];
+                }
+
+                for (int n = 0; n < 3; n++) {
+                    triProj.t[n].x /= triProj.p[n].w;
+                    triProj.t[n].y /= triProj.p[n].w;
+                    triProj.t[n].w = 1.0f / triProj.p[n].w;
+                }
+
+                for (int n = 0; n < 3; n++)
+                    triProj.p[n] = Vec3D_Div(triProj.p[n], FloatAsVec(triProj.p[n].w));
+
+               	// X/Y are inverted so put them back
+				triProj.p[0].x *= -1.0f;
+				triProj.p[1].x *= -1.0f;
+				triProj.p[2].x *= -1.0f;
+				triProj.p[0].y *= -1.0f;
+				triProj.p[1].y *= -1.0f;
+				triProj.p[2].y *= -1.0f;
+
+                // Scale mesh into view             
+	            triProj.p[0].x *= 0.5f * (float)SCREEN_WIDTH;
+		        triProj.p[0].y *= 0.5f * (float)SCREEN_HEIGHT;
+	            triProj.p[1].x *= 0.5f * (float)SCREEN_WIDTH;
+	            triProj.p[1].y *= 0.5f * (float)SCREEN_HEIGHT;
+	            triProj.p[2].x *= 0.5f * (float)SCREEN_WIDTH;
+	            triProj.p[2].y *= 0.5f * (float)SCREEN_HEIGHT;
+
+                triProj.p[0].x += SCREEN_WIDTH / 2; 
+                triProj.p[0].y += SCREEN_HEIGHT / 2;
+		        triProj.p[1].x += SCREEN_WIDTH / 2;
+                triProj.p[1].y += SCREEN_HEIGHT / 2;
+		        triProj.p[2].x += SCREEN_WIDTH / 2; 
+                triProj.p[2].y += SCREEN_HEIGHT / 2;
+
+                triangles_to_raster.push_back({ triProj, fLightingVal });
+            }
+        }
+    }
+
+    // sort triangles back to front
+    /*sort(triangles_to_raster.begin(), triangles_to_raster.end(), [](RasterableTriangle &t1, RasterableTriangle &t2) 
+    {
+        float z1 = (t1.tri.p[0].z + t1.tri.p[1].z + t1.tri.p[2].z) / 3.0f;
+        float z2 = (t2.tri.p[0].z + t2.tri.p[1].z + t2.tri.p[2].z) / 3.0f;
+        return z1 > z2;
+    });*/
+
+    // raster triangles
+    for (auto &triToRaster : triangles_to_raster) {
+		// Clip triangles against all four screen edges, this could yield
+		// a bunch of triangles, so create a queue that we traverse to 
+		//  ensure we only test new triangles generated against planes
+		Triangle clipped[2];
+		std::list<Triangle> triangles;
+
+		// Add initial triangle
+		triangles.push_back(triToRaster.tri);
+		int new_triangles = 1;
+
+		for (int p = 0; p < 4; p++) {
+			int tris_to_add = 0;
+			while (new_triangles > 0) {
+				// Take triangle from front of queue
+				Triangle test = triangles.front();
+				triangles.pop_front();
+				new_triangles--;
+
+				// Clip it against a plane. We only need to test each 
+				// subsequent plane, against subsequent new triangles
+				// as all triangles after a plane clip are guaranteed
+				// to lie on the inside of the plane. I like how this
+				// comment is almost completely and utterly justified
+				switch (p)
+				{
+				case 0:	tris_to_add = TriangleClipAgainstPlane({ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+				case 1:	tris_to_add = TriangleClipAgainstPlane({ 0.0f, (float)SCREEN_HEIGHT - 1, 0.0f }, { 0.0f, -1.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+				case 2:	tris_to_add = TriangleClipAgainstPlane({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+				case 3:	tris_to_add = TriangleClipAgainstPlane({ (float)SCREEN_WIDTH - 1, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, test, clipped[0], clipped[1]); break;
+				}
+
+				// Clipping may yield a variable number of triangles, so
+				// add these new ones to the back of the queue for subsequent
+				// clipping against next planes
+				for (int w = 0; w < tris_to_add; w++)
+					triangles.push_back(clipped[w]);
+			}
+			new_triangles = triangles.size();
+		}
+
+		// Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
+		for (auto &t : triangles) {
+            RasterableTriangle tri = { t, triToRaster.brightness };
+			tri.Raster(engine, texture, depth_buffer, wireframe);
+		}
+    }
+}
+
+void RasterableTriangle::Raster(olc::PixelGameEngine *engine, olc::Sprite *sprTex, float *depth_buffer, bool wireframe = false) {
+	ShadeTriangle(tri.p[0].x, tri.p[0].y, tri.t[0].x, tri.t[0].y, tri.t[0].w,
+				  tri.p[1].x, tri.p[1].y, tri.t[1].x, tri.t[1].y, tri.t[1].w,
+				  tri.p[2].x, tri.p[2].y, tri.t[2].x, tri.t[2].y, tri.t[2].w, 
+				  sprTex, engine, depth_buffer, brightness);
+
+	if (wireframe) {
+		engine->DrawTriangle(tri.p[0].x, tri.p[0].y,
+					 	 	 tri.p[1].x, tri.p[1].y, 
+					 	 	 tri.p[2].x, tri.p[2].y);
+	}
 }
 
 int TriangleClipAgainstPlane(Vec3D plane_p, Vec3D plane_n, Triangle &in_tri, Triangle &out_tri1, Triangle &out_tri2)
 {
 	// Make sure plane normal is indeed normal
-	plane_n.Normalize();
+	plane_n.normalize();
 
 	// Return signed shortest distance from point to plane, plane normal must be normalised
 	auto dist = [&](Vec3D &p)
 	{
-		Vec3D n = p.Normal();
+		Vec3D n = p.normal();
 		return (plane_n.x * p.x + plane_n.y * p.y + plane_n.z * p.z - DotProduct(plane_n, plane_p));
 	};
 
@@ -209,11 +347,11 @@ int TriangleClipAgainstPlane(Vec3D plane_p, Vec3D plane_n, Triangle &in_tri, Tri
 	}
 }
 
-void TexturedTriangle(int x1, int y1, float u1, float v1, float w1,
-					  int x2, int y2, float u2, float v2, float w2,
-					  int x3, int y3, float u3, float v3, float w3,
-					  olc::Sprite *tex, olc::PixelGameEngine *engine,
-					  float *pDepthBuffer, float fBrightness)
+void ShadeTriangle(int x1, int y1, float u1, float v1, float w1,
+				   int x2, int y2, float u2, float v2, float w2,
+				   int x3, int y3, float u3, float v3, float w3,
+				   olc::Sprite *tex, olc::PixelGameEngine *engine,
+				   float *depth_buffer, float brightness)
 {
 	if (y2 < y1)
 	{
@@ -292,11 +430,12 @@ void TexturedTriangle(int x1, int y1, float u1, float v1, float w1,
 				tex_v = (1.0f - t) * tex_sv + t * tex_ev;
 				tex_w = (1.0f - t) * tex_sw + t * tex_ew;
 
-				if (tex_w > pDepthBuffer[i * SCREEN_WIDTH + j])
+				if (tex_w > depth_buffer[i * SCREEN_WIDTH + j])
 				{
-					olc::Pixel drawPixel = olc::Pixel(tex->Sample(tex_u / tex_w, tex_v / tex_w).r / fBrightness, tex->Sample(tex_u / tex_w, tex_v / tex_w).g / fBrightness, tex->Sample(tex_u / tex_w, tex_v / tex_w).b / fBrightness);
+					// olc::Pixel drawPixel = olc::Pixel(tex->Sample(tex_u / tex_w, tex_v / tex_w).r / brightness, tex->Sample(tex_u / tex_w, tex_v / tex_w).g / brightness, tex->Sample(tex_u / tex_w, tex_v / tex_w).b / brightness);
+					olc::Pixel drawPixel = olc::Pixel(std::clamp(i - 300, 0, 255) / brightness, std::clamp(j - 300, 0, 255) / brightness, 255 / brightness);
 					engine->Draw(j, i, drawPixel);
-					pDepthBuffer[i * SCREEN_WIDTH + j] = tex_w;
+					depth_buffer[i * SCREEN_WIDTH + j] = tex_w;
 				}
 				t += tstep;
 			}	
@@ -343,11 +482,12 @@ void TexturedTriangle(int x1, int y1, float u1, float v1, float w1,
 				tex_v = (1.0f - t) * tex_sv + t * tex_ev;
 				tex_w = (1.0f - t) * tex_sw + t * tex_ew;	
 
-				if (tex_w > pDepthBuffer[i * SCREEN_WIDTH + j])
+				if (tex_w > depth_buffer[i * SCREEN_WIDTH + j])
 				{
-					olc::Pixel drawPixel = olc::Pixel(tex->Sample(tex_u / tex_w, tex_v / tex_w).r / fBrightness, tex->Sample(tex_u / tex_w, tex_v / tex_w).g / fBrightness, tex->Sample(tex_u / tex_w, tex_v / tex_w).b / fBrightness);
+					// olc::Pixel drawPixel = olc::Pixel(tex->Sample(tex_u / tex_w, tex_v / tex_w).r / brightness, tex->Sample(tex_u / tex_w, tex_v / tex_w).g / brightness, tex->Sample(tex_u / tex_w, tex_v / tex_w).b / brightness);
+					olc::Pixel drawPixel = olc::Pixel(std::clamp(i - 300, 0, 255) / brightness, std::clamp(j - 300, 0, 255) / brightness, 255 / brightness);
 					engine->Draw(j, i, drawPixel);
-					pDepthBuffer[i * SCREEN_WIDTH + j] = tex_w;
+					depth_buffer[i * SCREEN_WIDTH + j] = tex_w;
 				}
 				t += tstep;
 			}

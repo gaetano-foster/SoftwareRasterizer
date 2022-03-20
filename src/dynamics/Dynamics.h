@@ -3,11 +3,10 @@
 
 #include "../math/mesh/Mesh.h"
 
-class Dynamic
-{
+class Dynamic {
 public:
     float x = 0, y = 0, z = 1; 
-    float xRot = 0, yRot = 0, zRot = 0;
+    float rotx = 0, roty = 0, rotz = 0;
 
 public:
     virtual void Update() = 0;
@@ -15,11 +14,10 @@ public:
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class Camera : public Dynamic
-{
+class Camera : public Dynamic {
 public:
-    float fFov = 90.0f;
-    Vec3D vLookDir = { 0, 0, 1 };
+    float fov = 90.0f;
+    Vec3D look_dir = { 0, 0, 1 };
     Mat4x4 matRot;
     Mat4x4 matView; 
 
@@ -29,14 +27,15 @@ public:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class Entity : public Dynamic
-{
+class Entity : public Dynamic {
 public:
-    Mesh mMesh;
+    Mesh mesh;
+    bool wireframe = false;
+    bool offset = true;
 
 public:
     void Update() override;
-    void Render(Camera cCamera, Mat4x4 matProj, olc::PixelGameEngine *engine, float *pDepthBuffer);
+    void Render(Camera camera, Mat4x4 matProj, olc::PixelGameEngine *engine, float *depth_buffer);
 
 private:
     Mat4x4 m_matWorld;

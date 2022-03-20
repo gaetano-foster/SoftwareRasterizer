@@ -1,7 +1,6 @@
 #include "../dynamics/Dynamics.h"
 
-class Rasterizer : public olc::PixelGameEngine
-{
+class Rasterizer : public olc::PixelGameEngine {
 public:
 	Rasterizer();
 
@@ -11,8 +10,7 @@ public:
 
 private:
 	Mat4x4 matProj;
-    Camera cCamera;
-    Entity eMesh;
-	int nLastMouseX, nLastMouseY, nMouseX, nMouseY;
-	float *pDepthBuffer;
+    Camera camera;
+    Entity mesh;
+	float *depth_buffer;
 };
